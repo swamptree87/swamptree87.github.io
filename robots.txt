@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://swamptree87.github.io/sitemap.xml

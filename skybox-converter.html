@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Skybox Converter: Equirectangular to Cubemap (and Back) for Unity and Godot - The_KnightShift</title>
+<meta name="description" content="Convert a 360 degree equirectangular panorama into six cubemap faces named for Unity's Skybox/6 Sided slots, make the mirrored copy Unity's Skybox/Panoramic shader expects, or stitch six faces back into a panorama. Runs in your browser; nothing is uploaded.">
+<link rel="canonical" href="https://swamptree87.github.io/skybox-converter.html">
+<style>
+  :root { --bg:#0b0e16; --fg:#e8ebf2; --muted:#9aa3b5; --card:#141927; --accent:#7cc4ff; --code:#0f1422; --ok:#7ee3a1; --warn:#ffcf7c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  header { padding:40px 16px 20px; text-align:center; background:linear-gradient(180deg,#141a2e 0%, var(--bg) 100%); }
+  header h1 { margin:0 0 8px; font-size:1.8rem; }
+  header p { margin:0 auto; color:var(--muted); max-width:720px; }
+  main { max-width:900px; margin:0 auto; padding:16px; }
+  h2 { font-size:1.3rem; margin:36px 0 10px; border-bottom:1px solid #222a3d; padding-bottom:6px; }
+  h3 { font-size:1.05rem; margin:18px 0 6px; }
+  p, li { color:#d6dbe6; }
+  code { background:var(--code); border-radius:4px; padding:1px 6px; font-size:.92em; overflow-wrap:anywhere; }
+  a { color:var(--accent); }
+  .box { background:var(--card); border-radius:10px; padding:14px 16px; margin:18px 0; }
+  .box p { margin:6px 0; }
+  .cta { display:inline-block; background:var(--accent); color:#0b0e16; font-weight:600; padding:10px 16px; border-radius:8px; text-decoration:none; margin:6px 8px 6px 0; }
+  .cta.alt { background:#1d2740; color:var(--accent); }
+  .tool { background:var(--card); border-radius:12px; padding:18px; margin:18px 0; }
+  .row { display:flex; flex-wrap:wrap; gap:12px 18px; align-items:center; margin:10px 0; }
+  label { color:var(--muted); font-size:.95em; }
+  select, input[type=file], button { font:inherit; }
+  select { background:var(--code); color:var(--fg); border:1px solid #2a3350; border-radius:6px; padding:6px 8px; }
+  button { background:var(--accent); color:#0b0e16; font-weight:600; border:0; border-radius:8px; padding:10px 16px; cursor:pointer; }
+  button.alt { background:#1d2740; color:var(--accent); }
+  button:disabled { opacity:.45; cursor:default; }
+  input[type=file] { color:var(--muted); max-width:100%; }
+  .drop { border:2px dashed #2a3350; border-radius:10px; padding:18px; text-align:center; color:var(--muted); }
+  .drop.over { border-color:var(--accent); color:var(--fg); }
+  .status { color:var(--muted); font-size:.95em; min-height:1.4em; }
+  .status.ok { color:var(--ok); } .status.warn { color:var(--warn); }
+  canvas.preview { max-width:100%; height:auto; border-radius:8px; background:#000; display:block; margin:10px 0; }
+  .faces { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px; margin:10px 0; }
+  .face { background:var(--code); border-radius:8px; padding:8px; text-align:center; font-size:.9em; }
+  .face canvas { width:100%; height:auto; border-radius:6px; display:block; margin-bottom:6px; background:#000; }
+  .face a { display:inline-block; margin-top:2px; }
+  .slots { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:10px; margin:10px 0; }
+  .slot { background:var(--code); border-radius:8px; padding:8px; font-size:.92em; }
+  .slot select { width:100%; margin-top:4px; }
+  table { border-collapse:collapse; width:100%; font-size:.92em; margin:10px 0; }
+  th, td { text-align:left; border-bottom:1px solid #222a3d; padding:6px 8px; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  footer { color:var(--muted); font-size:.85rem; text-align:center; padding:32px 16px; }
+  .crumbs { font-size:.9em; color:var(--muted); margin-bottom:8px; }
+  .small { font-size:.9em; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="crumbs"><a href="index.html">The_KnightShift</a> &rsaquo; Free tools</div>
+  <h1>Skybox converter: panorama to cubemap, and back</h1>
+  <p>Turn one 360 degree equirectangular image into six cube faces already named for Unity's Skybox/6 Sided slots, make the mirrored copy that Unity's Skybox/Panoramic shader expects, or stitch six faces back into a panorama. Everything runs in your browser; your images never leave your computer.</p>
+</header>
+<main>
+
+<div class="box">
+  <p><strong>Need a sky to convert?</strong> The free <a href="https://the-knightshift.itch.io/skybox-sampler">Skybox Sampler</a> has six finished skies as 2048 x 1024 panoramas, with the six-face sets and the Unity panoramas already made. The paid packs (<a href="https://the-knightshift.itch.io/space-skyboxes">Space</a>, <a href="https://the-knightshift.itch.io/stylized-skyboxes">Stylized Sky</a>, <a href="https://the-knightshift.itch.io/alien-skyboxes">Alien Worlds</a>) ship every sky in all three forms at 4K.</p>
+  <p><a class="cta" href="https://the-knightshift.itch.io/skybox-sampler">Download the free sampler</a> <a class="cta alt" href="#how">How the conversion works</a></p>
+</div>
+
+<h2 id="pano2cube">1. Panorama to six cube faces</h2>
+<div class="tool">
+  <p>Drop a 2:1 equirectangular image (PNG or JPG; 4096 x 2048 is a typical size). You get six square faces. With <strong>Unity names</strong> each file is named after the Skybox/6 Sided slot it goes into (Front, Back, Left, Right, Up, Down). With <strong>axis names</strong> the files are <code>px, nx, py, ny, pz, nz</code> in the OpenGL cubemap layout, which is what most other engines and tools expect.</p>
+  <div class="drop" id="dropA">Drop a panorama here, or <label style="color:var(--accent);cursor:pointer">choose a file<input type="file" id="fileA" accept="image/*" hidden></label></div>
+  <div class="row">
+    <label>Face size <select id="sizeA"><option>256</option><option>512</option><option selected>1024</option><option>2048</option></select> px</label>
+    <label>File names <select id="namesA"><option value="unity" selected>Unity slots (Front, Back, Left, Right, Up, Down)</option><option value="axis">Axis names (px, nx, py, ny, pz, nz)</option></select></label>
+    <button id="runA" disabled>Convert</button>
+    <button id="zipA" class="alt" disabled>Download all as ZIP</button>
+  </div>
+  <div class="status" id="statusA">No image loaded.</div>
+  <canvas class="preview" id="crossA" width="1" height="1" hidden></canvas>
+  <div class="faces" id="facesA"></div>
+</div>
+
+<h2 id="unitypano">2. Panorama for Unity's Skybox/Panoramic shader</h2>
+<div class="tool">
+  <p>Unity's <code>Skybox/Panoramic</code> shader reads a latitude-longitude image <em>mirrored</em> compared with Godot, Blender and most HDRI viewers, and with its seam a quarter turn away: a panorama that is right in Godot shows the sun on the wrong side in Unity and does not line up with the same sky's six-face set. This makes the copy that does line up. Use the same panorama as above (it is reused if you have loaded one).</p>
+  <div class="drop" id="dropB">Drop a panorama here, or <label style="color:var(--accent);cursor:pointer">choose a file<input type="file" id="fileB" accept="image/*" hidden></label></div>
+  <div class="row">
+    <button id="runB" disabled>Make the Unity panorama</button>
+  </div>
+  <div class="status" id="statusB">No image loaded.</div>
+  <canvas class="preview" id="outB" width="1" height="1" hidden></canvas>
+  <p id="dlB"></p>
+</div>
+
+<h2 id="cube2pano">3. Six cube faces to a panorama</h2>
+<div class="tool">
+  <p>Drop six square images at once. Names containing <code>front, back, left, right, up, down</code> (Unity slots) or <code>px, nx, py, ny, pz, nz</code> (axis names) are matched automatically; fix any slot by hand below. The output is a 2:1 panorama in the standard layout (Godot's PanoramaSkyMaterial, Blender, HDRI viewers), with the Front face at the centre of the image.</p>
+  <div class="drop" id="dropC">Drop six faces here, or <label style="color:var(--accent);cursor:pointer">choose files<input type="file" id="fileC" accept="image/*" multiple hidden></label></div>
+  <div class="slots" id="slotsC"></div>
+  <div class="row">
+    <label>Panorama width <select id="sizeC"><option>1024</option><option selected>2048</option><option>4096</option></select> px</label>
+    <button id="runC" disabled>Stitch the panorama</button>
+  </div>
+  <div class="status" id="statusC">No faces loaded.</div>
+  <canvas class="preview" id="outC" width="1" height="1" hidden></canvas>
+  <p id="dlC"></p>
+</div>
+
+<h2 id="how">How the conversion works</h2>
+<p>A skybox is a function of the view direction. An equirectangular panorama stores that function as a 2:1 image where the horizontal axis is the compass heading (longitude) and the vertical axis is the angle from straight up (latitude). A cubemap stores the same function as six square images, each the view through one face of a cube centred on the camera. Converting between them means, for every pixel of the output, working out which 3D direction it shows and reading the colour of that direction from the input. This page does exactly that, with bilinear filtering, in JavaScript on your own machine.</p>
+
+<h3>Conventions used here</h3>
+<table>
+  <tr><th>Face</th><th>World direction</th><th>Unity 6 Sided slot</th><th>Axis name</th></tr>
+  <tr><td>Front</td><td>+Z</td><td>Front</td><td><code>pz</code></td></tr>
+  <tr><td>Back</td><td>-Z</td><td>Back</td><td><code>nz</code></td></tr>
+  <tr><td>Left slot</td><td>+X</td><td>Left</td><td><code>px</code></td></tr>
+  <tr><td>Right slot</td><td>-X</td><td>Right</td><td><code>nx</code></td></tr>
+  <tr><td>Up</td><td>+Y</td><td>Up</td><td><code>py</code></td></tr>
+  <tr><td>Down</td><td>-Y</td><td>Down</td><td><code>ny</code></td></tr>
+</table>
+<p>Unity's manual defines the six slots by world axis, and its <strong>Left</strong> slot is the +X face, which sits to the right of a default camera. The files made here are named after the slot they go into, so put each file into the slot with the same name and the sky is upright with no swapped sides. The six images are "inside view" faces in the OpenGL cubemap layout: the bottom edge of <em>Up</em> meets the top edge of <em>Front</em>, as on an unfolded cross. The centre of the panorama becomes the Front face.</p>
+<p>These are the same conventions our own packs use, and they were checked in Unity 6: faces line up with no seams, the horizon is level and the sky is upright. If your source panorama has a different "front" (the sun where you do not want it), rotate the panorama first by rolling it horizontally; a quarter of the image width is a 90 degree turn.</p>
+
+<h3>Import settings that avoid seams</h3>
+<ul>
+  <li><strong>Unity, six faces:</strong> Texture Shape 2D, sRGB on, <strong>Wrap Mode Clamp</strong>, Generate Mip Maps off, Filter Bilinear, Compression None or High Quality. Then a material with shader <code>Skybox/6 Sided</code>, each file in its slot; assign it in Window &rarr; Rendering &rarr; Lighting &rarr; Environment. The full walkthrough is in the <a href="unity-6-sided-skybox-guide.html">Unity skybox guide</a>.</li>
+  <li><strong>Unity, one panorama:</strong> use the copy from step 2, Wrap Mode Repeat, Mip Maps off, shader <code>Skybox/Panoramic</code>, Mapping Latitude Longitude, 360 Degrees.</li>
+  <li><strong>Godot 4:</strong> you do not need the cube faces at all. Put the panorama in a <code>PanoramaSkyMaterial</code> inside a Sky, inside an Environment, on a WorldEnvironment node. Steps and fixes are in the <a href="godot-4-skybox-guide.html">Godot 4 skybox guide</a>. If you have only six faces, use step 3 here to make the panorama.</li>
+  <li><strong>Face size:</strong> for a 4096 x 2048 panorama, 1024 px faces keep roughly the same detail per degree; 2048 px faces are sharper near the cube corners but four times the memory. Browsers can run out of memory above 2048.</li>
+</ul>
+
+<h3>Privacy and limits</h3>
+<p>No upload happens: the files are read by your browser and never sent anywhere. Very large images (8K panoramas, 4K faces) may be slow or fail in the browser; for batch work, our packs' pipeline does the same conversion offline. The output is 8-bit PNG, so an HDR source loses its range; convert HDR files in your engine or in Blender instead.</p>
+
+<div class="box" id="packs">
+  <p><strong>Skip the conversion.</strong> Every sky in our packs comes as a 4K panorama, a six-face set named for Unity, a mirrored panorama for Skybox/Panoramic and a Godot 4 addon with ready Environments. The <a href="https://the-knightshift.itch.io/skybox-sampler">free sampler</a> has two skies from each pack. Royalty-free, no attribution required.</p>
+  <p><a class="cta" href="https://the-knightshift.itch.io/skybox-sampler">Free sampler</a> <a class="cta alt" href="https://the-knightshift.itch.io/space-skyboxes">Space Skyboxes</a> <a class="cta alt" href="https://the-knightshift.itch.io/stylized-skyboxes">Stylized Sky</a> <a class="cta alt" href="https://the-knightshift.itch.io/alien-skyboxes">Alien Worlds</a></p>
+</div>
+
+</main>
+<footer>&copy; 2026 The_KnightShift. <a href="index.html">Store</a> &middot; <a href="godot-4-skybox-guide.html">Godot 4 guide</a> &middot; <a href="unity-6-sided-skybox-guide.html">Unity guide</a> &middot; <a href="debt-snowball-calculator.html">Debt calculator</a>. The converter runs entirely in your browser; no files are uploaded.</footer>
+
+<script>
+// ---- Core maths (shared conventions with our packs; see "How the conversion works") ----
+// World: right-handed, +Y up. Panorama: u = atan2(x, -z) / 2pi (mod 1), v = acos(y) / pi.
+// Cube faces (OpenGL table; image row 0 = top, col 0 = left; s grows right, t grows down):
+//   +X: (1,-t,-s)  -X: (-1,-t,s)  +Y: (s,1,t)  -Y: (s,-1,-t)  +Z: (s,-t,1)  -Z: (-s,-t,-1)
+var FACES = ['px','nx','py','ny','pz','nz'];
+var UNITY_NAMES = {pz:'Front', nz:'Back', px:'Left', nx:'Right', py:'Up', ny:'Down'};
+var FACE_LABEL = {px:'Left slot (+X)', nx:'Right slot (-X)', py:'Up (+Y)', ny:'Down (-Y)', pz:'Front (+Z)', nz:'Back (-Z)'};
+
+function faceDir(face, s, t) {
+  switch (face) {
+    case 'px': return [1, -t, -s];
+    case 'nx': return [-1, -t, s];
+    case 'py': return [s, 1, t];
+    case 'ny': return [s, -1, -t];
+    case 'pz': return [s, -t, 1];
+    default:   return [-s, -t, -1];
+  }
+}
+function dirToPanoUV(x, y, z) {
+  var len = Math.sqrt(x*x + y*y + z*z);
+  var u = Math.atan2(x, -z) / (2 * Math.PI); u -= Math.floor(u);
+  var v = Math.acos(Math.max(-1, Math.min(1, y / len))) / Math.PI;
+  return [u, v];
+}
+function panoDir(u, v) {
+  var th = u * 2 * Math.PI, al = v * Math.PI, sa = Math.sin(al);
+  return [sa * Math.sin(th), Math.cos(al), -sa * Math.cos(th)];
+}
+// Which face a direction falls on, and its (s,t) in [-1,1] on that face.
+function dirToFace(x, y, z) {
+  var ax = Math.abs(x), ay = Math.abs(y), az = Math.abs(z);
+  if (ax >= ay && ax >= az) {
+    return x > 0 ? ['px', -z/ax, -y/ax] : ['nx', z/ax, -y/ax];
+  } else if (ay >= az) {
+    return y > 0 ? ['py', x/ay, z/ay] : ['ny', x/ay, -z/ay];
+  }
+  return z > 0 ? ['pz', x/az, -y/az] : ['nz', -x/az, -y/az];
+}
+// Bilinear sample of RGBA data (w x h). wrapX: longitude wrap; otherwise clamp.
+function sampleBilinear(data, w, h, fx, fy, wrapX, out, o) {
+  var x0 = Math.floor(fx), y0 = Math.floor(fy), tx = fx - x0, ty = fy - y0, x1 = x0 + 1, y1 = y0 + 1;
+  if (wrapX) { x0 = ((x0 % w) + w) % w; x1 = ((x1 % w) + w) % w; }
+  else { x0 = x0 < 0 ? 0 : x0 >= w ? w - 1 : x0; x1 = x1 < 0 ? 0 : x1 >= w ? w - 1 : x1; }
+  y0 = y0 < 0 ? 0 : y0 >= h ? h - 1 : y0; y1 = y1 < 0 ? 0 : y1 >= h ? h - 1 : y1;
+  var i00 = (y0 * w + x0) * 4, i10 = (y0 * w + x1) * 4, i01 = (y1 * w + x0) * 4, i11 = (y1 * w + x1) * 4;
+  var w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty;
+  for (var c = 0; c < 3; c++) {
+    out[o + c] = data[i00 + c] * w00 + data[i10 + c] * w10 + data[i01 + c] * w01 + data[i11 + c] * w11 + 0.5;
+  }
+  out[o + 3] = 255;
+}
+// Panorama (RGBA, W x H) -> one face (RGBA, n x n).
+function panoToFace(pano, W, H, face, n) {
+  var out = new Uint8ClampedArray(n * n * 4), o = 0;
+  for (var j = 0; j < n; j++) {
+    var t = ((j + 0.5) / n) * 2 - 1;
+    for (var i = 0; i < n; i++) {
+      var s = ((i + 0.5) / n) * 2 - 1;
+      var d = faceDir(face, s, t);
+      var uv = dirToPanoUV(d[0], d[1], d[2]);
+      sampleBilinear(pano, W, H, uv[0] * W - 0.5, uv[1] * H - 0.5, true, out, o);
+      o += 4;
+    }
+  }
+  return out;
+}
+// Six faces {face: {data, n}} -> panorama RGBA (W x H).
+function facesToPano(faces, W, H) {
+  var out = new Uint8ClampedArray(W * H * 4), o = 0;
+  for (var j = 0; j < H; j++) {
+    var v = (j + 0.5) / H;
+    for (var i = 0; i < W; i++) {
+      var d = panoDir((i + 0.5) / W, v);
+      var f = dirToFace(d[0], d[1], d[2]);
+      var F = faces[f[0]], n = F.n;
+      sampleBilinear(F.data, n, n, (f[1] + 1) / 2 * n - 0.5, (f[2] + 1) / 2 * n - 0.5, false, out, o);
+      o += 4;
+    }
+  }
+  return out;
+}
+// Unity Skybox/Panoramic reads u = 0.5 - atan2(z, x)/2pi: the standard panorama mirrored and rolled by 3/4 of its width.
+function unityIndex(W) {
+  var idx = new Int32Array(W);
+  for (var i = 0; i < W; i++) { var k = (Math.floor(3 * W / 4) - 1 - i) % W; idx[i] = k < 0 ? k + W : k; }
+  return idx;
+}
+function toUnityPano(pano, W, H) {
+  var idx = unityIndex(W), out = new Uint8ClampedArray(W * H * 4);
+  for (var j = 0; j < H; j++) {
+    var row = j * W * 4;
+    for (var i = 0; i < W; i++) {
+      var src = row + idx[i] * 4, dst = row + i * 4;
+      out[dst] = pano[src]; out[dst+1] = pano[src+1]; out[dst+2] = pano[src+2]; out[dst+3] = 255;
+    }
+  }
+  return out;
+}
+// Minimal ZIP writer (store, no compression): files = [{name, data: Uint8Array}] -> Uint8Array.
+var CRC_TABLE = (function () { var t = new Int32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c; } return t; })();
+function crc32(bytes) { var c = -1; for (var i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8); return (c ^ -1) >>> 0; }
+function makeZip(files) {
+  var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+  var dosTime = 0, dosDate = (1 << 5) | 1; // 1980-01-01 00:00, fixed so the output is reproducible
+  function u16(v) { return [v & 255, (v >>> 8) & 255]; }
+  function u32(v) { return [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]; }
+  files.forEach(function (f) {
+    var name = enc.encode(f.name), data = f.data, crc = crc32(data);
+    var local = new Uint8Array([].concat([0x50, 0x4b, 3, 4], u16(20), u16(0x0800), u16(0), u16(dosTime), u16(dosDate), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0)));
+    parts.push(local, name, data);
+    central.push(new Uint8Array([].concat([0x50, 0x4b, 1, 2], u16(20), u16(20), u16(0x0800), u16(0), u16(dosTime), u16(dosDate), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), name);
+    offset += local.length + name.length + data.length;
+  });
+  var cdSize = central.reduce(function (a, b) { return a + b.length; }, 0);
+  var end = new Uint8Array([].concat([0x50, 0x4b, 5, 6], u16(0), u16(0), u16(files.length), u16(files.length), u32(cdSize), u32(offset), u16(0)));
+  var total = offset + cdSize + end.length, out = new Uint8Array(total), p = 0;
+  parts.concat(central, [end]).forEach(function (b) { out.set(b, p); p += b.length; });
+  return out;
+}
+if (typeof module !== 'undefined') { module.exports = {FACES, UNITY_NAMES, faceDir, dirToPanoUV, panoDir, dirToFace, panoToFace, facesToPano, unityIndex, toUnityPano, crc32, makeZip}; }
+
+// ---- Page wiring (skipped when loaded outside a browser) ----
+if (typeof document !== 'undefined') (function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var panoImg = null;   // {data, w, h, name}
+  var faceResults = {}; // face -> {blob, name}
+  var faceImgs = {};    // slot assignment for step 3: face -> {data, n, name}
+  var fileListC = [];
+
+  function setStatus(id, msg, cls) { var el = $(id); el.textContent = msg; el.className = 'status' + (cls ? ' ' + cls : ''); }
+  function readImage(file) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        var ctx = c.getContext('2d', {willReadFrequently: true}); ctx.drawImage(img, 0, 0);
+        var d = ctx.getImageData(0, 0, c.width, c.height).data; URL.revokeObjectURL(url);
+        res({data: d, w: c.width, h: c.height, name: file.name});
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('Could not read ' + file.name)); };
+      img.src = url;
+    });
+  }
+  function toCanvas(data, w, h, canvas) {
+    canvas = canvas || document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').putImageData(new ImageData(data, w, h), 0, 0); return canvas;
+  }
+  function canvasBlob(canvas) { return new Promise(function (res) { canvas.toBlob(res, 'image/png'); }); }
+  function baseName(n) { return (n || 'skybox').replace(/\.[^.]+$/, '').replace(/[^\w.-]+/g, '_'); }
+  function wireDrop(dropId, fileId, onFiles) {
+    var drop = $(dropId), inp = $(fileId);
+    inp.addEventListener('change', function () { onFiles(Array.from(inp.files)); inp.value = ''; });
+    drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+    drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('over'); onFiles(Array.from(e.dataTransfer.files)); });
+  }
+  function nextFrame() { return new Promise(function (r) { setTimeout(r, 0); }); }
+
+  // --- Step 1 and 2 share the panorama ---
+  function loadPano(files, which) {
+    if (!files.length) return;
+    readImage(files[0]).then(function (im) {
+      panoImg = im;
+      var ratio = im.w / im.h, warn = Math.abs(ratio - 2) > 0.02 ? ' Warning: not a 2:1 image (' + im.w + ' x ' + im.h + '); the result will be stretched.' : '';
+      setStatus('statusA', 'Loaded ' + im.name + ' (' + im.w + ' x ' + im.h + ').' + warn, warn ? 'warn' : 'ok');
+      setStatus('statusB', 'Loaded ' + im.name + ' (' + im.w + ' x ' + im.h + ').' + warn, warn ? 'warn' : 'ok');
+      $('runA').disabled = false; $('runB').disabled = false; $('zipA').disabled = true;
+      $('facesA').innerHTML = ''; $('crossA').hidden = true; $('outB').hidden = true; $('dlB').innerHTML = '';
+    }).catch(function (e) { setStatus(which === 'B' ? 'statusB' : 'statusA', e.message, 'warn'); });
+  }
+  wireDrop('dropA', 'fileA', function (f) { loadPano(f, 'A'); });
+  wireDrop('dropB', 'fileB', function (f) { loadPano(f, 'B'); });
+
+  $('runA').addEventListener('click', async function () {
+    if (!panoImg) return;
+    var n = parseInt($('sizeA').value, 10), naming = $('namesA').value;
+    $('runA').disabled = true; $('zipA').disabled = true; faceResults = {}; $('facesA').innerHTML = '';
+    var cross = $('crossA'); cross.hidden = false; cross.width = n * 4; cross.height = n * 3;
+    var cctx = cross.getContext('2d'); cctx.fillStyle = '#000'; cctx.fillRect(0, 0, cross.width, cross.height);
+    var pos = {py: [1, 0], nx: [0, 1], pz: [1, 1], px: [2, 1], nz: [3, 1], ny: [1, 2]};
+    var base = baseName(panoImg.name);
+    for (var k = 0; k < FACES.length; k++) {
+      var face = FACES[k];
+      setStatus('statusA', 'Rendering face ' + (k + 1) + ' of 6 (' + FACE_LABEL[face] + ')...');
+      await nextFrame();
+      var data = panoToFace(panoImg.data, panoImg.w, panoImg.h, face, n);
+      var c = toCanvas(data, n, n);
+      cctx.drawImage(c, pos[face][0] * n, pos[face][1] * n);
+      var fname = (naming === 'unity' ? UNITY_NAMES[face] : face) + '.png';
+      var blob = await canvasBlob(c);
+      faceResults[face] = {blob: blob, name: fname};
+      var div = document.createElement('div'); div.className = 'face';
+      var thumb = document.createElement('canvas'); thumb.width = 256; thumb.height = 256; thumb.getContext('2d').drawImage(c, 0, 0, 256, 256);
+      div.appendChild(thumb);
+      var lab = document.createElement('div'); lab.textContent = FACE_LABEL[face]; div.appendChild(lab);
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = base + '_' + fname; a.textContent = 'Download ' + fname; div.appendChild(a);
+      $('facesA').appendChild(div);
+    }
+    setStatus('statusA', 'Done: six ' + n + ' x ' + n + ' faces. The cross above shows how they join (Up over Front, Left slot to the right of Front as seen from inside).', 'ok');
+    $('runA').disabled = false; $('zipA').disabled = false;
+  });
+
+  $('zipA').addEventListener('click', async function () {
+    if (!faceResults.pz) return;
+    var folder = baseName(panoImg.name) + '_cubemap/', files = [];
+    for (var k = 0; k < FACES.length; k++) {
+      var r = faceResults[FACES[k]];
+      files.push({name: folder + r.name, data: new Uint8Array(await r.blob.arrayBuffer())});
+    }
+    files.push({name: folder + 'README.txt', data: new TextEncoder().encode('Six cube faces made with the free skybox converter at https://swamptree87.github.io/skybox-converter.html\n\nUnity: shader Skybox/6 Sided, put each file in the slot with the same name (Left = +X, Right = -X). Import settings: Wrap Mode Clamp, Mip Maps off.\nAxis names: px nx py ny pz nz in the OpenGL cubemap layout; Front = pz.\n')});
+    setStatus('statusA', 'Packing the ZIP...');
+    var blob = new Blob([makeZip(files)], {type: 'application/zip'});
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = baseName(panoImg.name) + '_cubemap.zip'; document.body.appendChild(a); a.click(); a.remove();
+    setStatus('statusA', 'ZIP downloaded (' + files.length + ' files, PNGs stored uncompressed).', 'ok');
+  });
+
+  $('runB').addEventListener('click', async function () {
+    if (!panoImg) return;
+    $('runB').disabled = true; setStatus('statusB', 'Mirroring and rolling...'); await nextFrame();
+    var data = toUnityPano(panoImg.data, panoImg.w, panoImg.h);
+    var out = $('outB'); out.hidden = false; toCanvas(data, panoImg.w, panoImg.h, out);
+    var blob = await canvasBlob(out);
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = baseName(panoImg.name) + '_unity_panoramic.png'; a.textContent = 'Download the Unity panorama (' + panoImg.w + ' x ' + panoImg.h + ' PNG)'; a.className = 'cta';
+    $('dlB').innerHTML = ''; $('dlB').appendChild(a);
+    setStatus('statusB', 'Done. Use it with Skybox/Panoramic (Latitude Longitude, 360 Degrees, Wrap Repeat, Mip Maps off). It matches the six faces from step 1 exactly.', 'ok');
+    $('runB').disabled = false;
+  });
+
+  // --- Step 3 ---
+  var SLOT_WORDS = {px: ['left', 'px', 'posx', 'x+', '+x', 'right_cube'], nx: ['right', 'nx', 'negx', 'x-', '-x'], py: ['up', 'top', 'py', 'posy', 'y+', '+y'], ny: ['down', 'bottom', 'ny', 'negy', 'y-', '-y'], pz: ['front', 'pz', 'posz', 'z+', '+z'], nz: ['back', 'nz', 'negz', 'z-', '-z']};
+  function guessFace(name) {
+    var n = name.toLowerCase().replace(/\.[^.]+$/, '');
+    var toks = n.split(/[^a-z0-9+-]+/);
+    for (var f in SLOT_WORDS) {
+      for (var k = 0; k < SLOT_WORDS[f].length; k++) if (toks.indexOf(SLOT_WORDS[f][k]) >= 0) return f;
+    }
+    for (var f2 in SLOT_WORDS) { for (var k2 = 0; k2 < SLOT_WORDS[f2].length; k2++) if (n.indexOf(SLOT_WORDS[f2][k2]) >= 0) return f2; }
+    return null;
+  }
+  function renderSlots() {
+    var box = $('slotsC'); box.innerHTML = '';
+    FACES.forEach(function (face) {
+      var div = document.createElement('div'); div.className = 'slot';
+      var lab = document.createElement('div'); lab.textContent = FACE_LABEL[face] + (face === 'pz' ? ' (Unity Front)' : face === 'px' ? ' (Unity Left slot)' : face === 'nx' ? ' (Unity Right slot)' : face === 'nz' ? ' (Unity Back)' : '');
+      var sel = document.createElement('select'); sel.dataset.face = face;
+      var none = document.createElement('option'); none.value = ''; none.textContent = '(none)'; sel.appendChild(none);
+      fileListC.forEach(function (im, idx) { var op = document.createElement('option'); op.value = idx; op.textContent = im.name + ' (' + im.w + ' x ' + im.h + ')'; if (faceImgs[face] === im) op.selected = true; sel.appendChild(op); });
+      sel.addEventListener('change', function () { faceImgs[face] = sel.value === '' ? null : fileListC[parseInt(sel.value, 10)]; checkC(); });
+      div.appendChild(lab); div.appendChild(sel); box.appendChild(div);
+    });
+    checkC();
+  }
+  function checkC() {
+    var ok = FACES.every(function (f) { return faceImgs[f]; });
+    var square = FACES.every(function (f) { return !faceImgs[f] || faceImgs[f].w === faceImgs[f].h; });
+    $('runC').disabled = !(ok && square);
+    if (!fileListC.length) setStatus('statusC', 'No faces loaded.');
+    else if (!square) setStatus('statusC', 'Every face must be square.', 'warn');
+    else if (!ok) setStatus('statusC', 'Assign all six slots (' + FACES.filter(function (f) { return !faceImgs[f]; }).map(function (f) { return FACE_LABEL[f]; }).join(', ') + ' missing).', 'warn');
+    else setStatus('statusC', 'Six faces assigned. Ready to stitch.', 'ok');
+  }
+  wireDrop('dropC', 'fileC', function (files) {
+    if (!files.length) return;
+    setStatus('statusC', 'Reading ' + files.length + ' file(s)...');
+    Promise.all(files.map(readImage)).then(function (ims) {
+      fileListC = fileListC.concat(ims);
+      ims.forEach(function (im) { var g = guessFace(im.name); if (g && !faceImgs[g]) faceImgs[g] = im; });
+      renderSlots();
+    }).catch(function (e) { setStatus('statusC', e.message, 'warn'); });
+  });
+  $('runC').addEventListener('click', async function () {
+    var W = parseInt($('sizeC').value, 10), H = W / 2;
+    $('runC').disabled = true; setStatus('statusC', 'Stitching ' + W + ' x ' + H + '...'); await nextFrame();
+    var faces = {}; FACES.forEach(function (f) { faces[f] = {data: faceImgs[f].data, n: faceImgs[f].w}; });
+    var data = facesToPano(faces, W, H);
+    var out = $('outC'); out.hidden = false; toCanvas(data, W, H, out);
+    var blob = await canvasBlob(out);
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'skybox_panorama_' + W + 'x' + H + '.png'; a.textContent = 'Download the panorama (' + W + ' x ' + H + ' PNG)'; a.className = 'cta';
+    $('dlC').innerHTML = ''; $('dlC').appendChild(a);
+    setStatus('statusC', 'Done. Front is at the centre of the image; this is the layout Godot, Blender and HDRI viewers expect. For Unity Skybox/Panoramic, run it through step 2.', 'ok');
+    $('runC').disabled = false;
+  });
+})();
+</script>
+</body>
+</html>

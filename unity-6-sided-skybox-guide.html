@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to Add a Skybox in Unity (6 Sided and Panoramic, Built-in, URP, HDRP) - The_KnightShift</title>
+<meta name="description" content="Step-by-step: make a Skybox/6 Sided or Skybox/Panoramic material in Unity, assign it in Lighting settings, light the scene from the sky, and fix seams, swapped faces and rotated tops. Works in Built-in, URP and HDRP. Free sample skies included.">
+<link rel="canonical" href="https://swamptree87.github.io/unity-6-sided-skybox-guide.html">
+<style>
+  :root { --bg:#0b0e16; --fg:#e8ebf2; --muted:#9aa3b5; --card:#141927; --accent:#7cc4ff; --code:#0f1422; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  header { padding:40px 16px 20px; text-align:center; background:linear-gradient(180deg,#141a2e 0%, var(--bg) 100%); }
+  header h1 { margin:0 0 8px; font-size:1.8rem; }
+  header p { margin:0 auto; color:var(--muted); max-width:680px; }
+  main { max-width:820px; margin:0 auto; padding:16px; }
+  h2 { font-size:1.3rem; margin:36px 0 10px; border-bottom:1px solid #222a3d; padding-bottom:6px; }
+  h3 { font-size:1.05rem; margin:22px 0 6px; }
+  p, li { color:#d6dbe6; }
+  ol li, ul li { margin:6px 0; }
+  code { background:var(--code); border-radius:4px; padding:1px 6px; font-size:.92em; overflow-wrap:anywhere; }
+  img { max-width:100%; height:auto; border-radius:8px; display:block; margin:12px 0; }
+  .box { background:var(--card); border-radius:10px; padding:14px 16px; margin:18px 0; }
+  .box p { margin:6px 0; }
+  .cta { display:inline-block; background:var(--accent); color:#0b0e16; font-weight:600; padding:10px 16px; border-radius:8px; text-decoration:none; margin:6px 8px 6px 0; }
+  .cta.alt { background:#1d2740; color:var(--accent); }
+  a { color:var(--accent); }
+  .toc { columns:2; column-gap:24px; }
+  .toc li { break-inside:avoid; }
+  table { border-collapse:collapse; width:100%; font-size:.92em; margin:10px 0; }
+  th, td { text-align:left; border-bottom:1px solid #222a3d; padding:6px 8px; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  footer { color:var(--muted); font-size:.85rem; text-align:center; padding:32px 16px; }
+  .crumbs { font-size:.9em; color:var(--muted); margin-bottom:8px; }
+  @media (max-width:600px) { .toc { columns:1; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="crumbs"><a href="index.html">The_KnightShift</a> &rsaquo; Guides</div>
+  <h1>How to add a skybox in Unity</h1>
+  <p>Skybox/6 Sided from six cube faces, Skybox/Panoramic from one 360 degree image, assigning it in Lighting, lighting the scene from the sky, HDRP's different route, and the fixes for seams, swapped faces and rotated tops. Built-in render pipeline, URP and HDRP.</p>
+</header>
+<main>
+
+<div class="box">
+  <p><strong>Want something to follow along with?</strong> The free <a href="https://the-knightshift.itch.io/skybox-sampler">Skybox Sampler</a> has six finished skies (nebula, ringed planet, supernova, golden hour, thunderstorm, moonlit night) as six-face sets already named Front, Back, Left, Right, Up, Down for Unity's slots, plus 2048 x 1024 panoramas. Checked in Unity 6: faces line up with no seams, horizon level, sky upright.</p>
+  <p><a class="cta" href="https://the-knightshift.itch.io/skybox-sampler">Download the free sampler</a> <a class="cta alt" href="#packs">See the full packs</a></p>
+</div>
+
+<h2>On this page</h2>
+<ul class="toc">
+  <li><a href="#sixsided">Option A: Skybox/6 Sided (recommended)</a></li>
+  <li><a href="#import">Import settings that avoid seams</a></li>
+  <li><a href="#assign">Assign the skybox and light the scene from it</a></li>
+  <li><a href="#panoramic">Option B: Skybox/Panoramic</a></li>
+  <li><a href="#hdrp">HDRP: Cubemap and the HDRI Sky override</a></li>
+  <li><a href="#script">Change the skybox from a script</a></li>
+  <li><a href="#problems">Common problems and fixes</a></li>
+  <li><a href="#packs">Ready-made skies</a></li>
+</ul>
+
+<p>Unity draws the sky with a <strong>skybox material</strong> set in the scene's Lighting window (or on a camera's Skybox component). The material's shader decides what it reads: <code>Skybox/6 Sided</code> takes six square images, one per cube face; <code>Skybox/Panoramic</code> takes one 2:1 equirectangular image; <code>Skybox/Cubemap</code> takes a Cubemap texture asset; <code>Skybox/Procedural</code> needs no image at all. Built-in and URP use these materials. HDRP does not, and has its own route below.</p>
+
+<img src="previews/unity_sky_space.jpg" width="1280" height="720" alt="A nebula skybox from the Space Skyboxes pack shown in a 3D scene" loading="lazy">
+
+<h2 id="sixsided">Option A: Skybox/6 Sided (recommended)</h2>
+<p>Unity's manual defines the six slots by world axis. Note that the <strong>Left</strong> slot is the +X face, which is to the <em>right</em> of a default camera; this trips up almost everyone the first time.</p>
+<table>
+  <tr><th>Slot</th><th>World direction</th><th>File in our packs</th></tr>
+  <tr><td>Front</td><td>+Z</td><td><code>Front.png</code></td></tr>
+  <tr><td>Back</td><td>-Z</td><td><code>Back.png</code></td></tr>
+  <tr><td>Left</td><td>+X</td><td><code>Left.png</code></td></tr>
+  <tr><td>Right</td><td>-X</td><td><code>Right.png</code></td></tr>
+  <tr><td>Up</td><td>+Y</td><td><code>Up.png</code></td></tr>
+  <tr><td>Down</td><td>-Y</td><td><code>Down.png</code></td></tr>
+</table>
+<ol>
+  <li>Copy the six images of one sky into your project, for example <code>Assets/Skies/Nebula/</code>.</li>
+  <li>Select all six in the Project window and set the import settings below, then <strong>Apply</strong>.</li>
+  <li><strong>Assets &rarr; Create &rarr; Material</strong>, name it, and set its <strong>Shader</strong> to <code>Skybox/6 Sided</code>.</li>
+  <li>Drag each image into the slot of the same name. If your pack names them differently, use the axis table: the image you see when looking down +Z goes in Front.</li>
+  <li>Assign the material in Lighting (next section).</li>
+</ol>
+
+<h2 id="import">Import settings that avoid seams</h2>
+<p>With all six images selected, in the Inspector:</p>
+<ul>
+  <li><strong>Texture Type:</strong> Default. <strong>Texture Shape:</strong> 2D.</li>
+  <li><strong>sRGB (Color Texture):</strong> on.</li>
+  <li><strong>Wrap Mode: Clamp.</strong> This is the one that matters: with Repeat, the filter samples the opposite edge of each face and draws a thin line along every cube edge.</li>
+  <li><strong>Generate Mip Maps:</strong> off. A sky is always at the same distance, so mips add nothing and can blur the edges.</li>
+  <li><strong>Filter Mode:</strong> Bilinear.</li>
+  <li><strong>Max Size:</strong> 1024 or higher (our paid packs are 1024 per face, the sampler 512). <strong>Compression:</strong> None or High Quality. Low-quality compression bands the smooth gradients in night and sunset skies.</li>
+</ul>
+
+<h2 id="assign">Assign the skybox and light the scene from it</h2>
+<ol>
+  <li>Open <strong>Window &rarr; Rendering &rarr; Lighting</strong> and the <strong>Environment</strong> tab.</li>
+  <li>Set <strong>Skybox Material</strong> to your new material. The Scene view updates at once.</li>
+  <li>For lighting that matches the sky, set <strong>Environment Lighting &rarr; Source</strong> to <strong>Skybox</strong>, and <strong>Environment Reflections &rarr; Source</strong> to Skybox. Then click <strong>Generate Lighting</strong>, or tick <strong>Auto Generate</strong>. Until lighting is generated, objects keep the old ambient colour.</li>
+  <li>Add a <strong>Directional Light</strong> and rotate it toward the sun or moon in the image. The skybox gives the soft fill; the light gives the shadows. In the Lighting window you can also set <strong>Sun Source</strong> to that light so a procedural sky, if you ever switch to one, draws its disc there.</li>
+</ol>
+<p>In <strong>URP</strong> the same material and the same Lighting window apply. One camera can override the scene skybox with a <strong>Skybox</strong> component (Add Component &rarr; Rendering &rarr; Skybox), which is handy for a menu scene that shares a scene file.</p>
+
+<h2 id="panoramic">Option B: Skybox/Panoramic</h2>
+<p>One 2:1 image instead of six. Simpler to manage, but a 4096 x 2048 panorama has fewer pixels per degree than six 1024 faces, so it looks a little softer at the same memory.</p>
+<ol>
+  <li>Import the panorama with <strong>Texture Shape 2D</strong>, <strong>Wrap Mode Repeat</strong> (the image must wrap horizontally), <strong>Generate Mip Maps off</strong> (mip maps produce a faint vertical line at the left/right seam of lat-long images), Filter Bilinear, Compression None or High Quality, Max Size 4096.</li>
+  <li>Create a material with shader <code>Skybox/Panoramic</code>. Set <strong>Mapping</strong> to <strong>Latitude Longitude Layout</strong> and <strong>Image Type</strong> to <strong>360 Degrees</strong>. Assign the image to <strong>Spherical (HDR)</strong>.</li>
+  <li>Assign the material in Lighting as above. <strong>Rotation</strong> on this material turns the whole sky, which the 6 Sided shader also offers.</li>
+</ol>
+<p>One caveat our packs handle for you: Unity's panoramic shader reads the image mirrored compared with Godot and most HDRI viewers, so a panorama that is correct in Godot shows its sun on the wrong side in Unity. Our packs ship a separate <code>unity_panoramas/</code> set that is already mirrored and rolled to match the six-face set exactly. For any other panorama, the free <a href="skybox-converter.html">skybox converter</a> makes that mirrored copy, and cuts six faces named for the 6 Sided slots, in your browser.</p>
+
+<h2 id="hdrp">HDRP: Cubemap and the HDRI Sky override</h2>
+<p>HDRP ignores the skybox material in Lighting. Instead:</p>
+<ol>
+  <li>Select the six faces, and in the Inspector set <strong>Texture Shape</strong> to <strong>Cube</strong> with <strong>Mapping</strong> set to <strong>6 Frames Layout</strong> (or import a single lat-long panorama with Texture Shape Cube and Mapping <strong>Latitude-Longitude</strong>, which is simpler). Unity builds a Cubemap asset.</li>
+  <li>Add a <strong>Volume</strong> (global) with a <strong>Visual Environment</strong> override, set <strong>Sky type</strong> to <strong>HDRI Sky</strong>, then add an <strong>HDRI Sky</strong> override and assign the Cubemap.</li>
+  <li>Exposure lives on the HDRI Sky override. Our images are 8-bit sRGB (LDR), so start with an exposure around 0 and adjust by eye; a physical-sky setup expects HDR values and will look dim with LDR images until you raise the exposure.</li>
+</ol>
+
+<h2 id="script">Change the skybox from a script</h2>
+<p>The scene's skybox material is <code>RenderSettings.skybox</code>. Swapping it and refreshing the environment lighting takes three lines:</p>
+<pre style="background:#0f1422;border-radius:8px;padding:12px 14px;overflow:auto;font-size:.88em;line-height:1.45"><code>using UnityEngine;
+
+public class SkySwitcher : MonoBehaviour
+{
+    public Material[] skies;
+    int index;
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            index = (index + 1) % skies.Length;
+            RenderSettings.skybox = skies[index];
+            DynamicGI.UpdateEnvironment();   // refresh ambient light and reflections
+        }
+    }
+}</code></pre>
+<p>To rotate a 6 Sided or Panoramic sky at runtime, set the material's <code>_Rotation</code> float: <code>RenderSettings.skybox.SetFloat("_Rotation", degrees);</code>. Use a material instance if you do not want the asset itself to change in the editor.</p>
+
+<h2 id="problems">Common problems and fixes</h2>
+<h3>Thin lines along the cube edges</h3>
+<p>Wrap Mode is Repeat on one or more faces. Set all six to <strong>Clamp</strong>. If a line remains, turn off mip maps and use Compression None.</p>
+<h3>Left and right look swapped across the seam with Front</h3>
+<p>The pack names its faces by direction from the camera rather than by Unity's slot. Swap the images in the <strong>Left</strong> and <strong>Right</strong> slots.</p>
+<h3>The top or bottom looks rotated</h3>
+<p>Different tools unfold the cube differently. Rotate that single image by 90 degrees in an image editor (try one direction, check the seam with Front, then the other) and reimport. Only Up and Down are affected; the four side faces are never rotated relative to each other.</p>
+<h3>Sky appears in the Scene view but not in Play mode</h3>
+<p>The camera's <strong>Clear Flags</strong> (Built-in) or <strong>Background Type</strong> (URP) is set to Solid Color. Set it to <strong>Skybox</strong>. In HDRP, check that the Volume is global and its layer matches the camera's Volume Mask.</p>
+<h3>Objects stay grey under a colourful sky</h3>
+<p>Environment Lighting Source is still Color or Gradient, or lighting has not been generated since you changed the skybox. Set Source to Skybox and click Generate Lighting (or call <code>DynamicGI.UpdateEnvironment()</code> at runtime).</p>
+<h3>Sky too bright or too dark</h3>
+<p>Use the <strong>Exposure</strong> slider on the skybox material. The images in our packs are ordinary 8-bit sRGB, not HDR, so exposures near 1 look right in the Built-in pipeline and URP; HDRP needs its own exposure on the HDRI Sky override.</p>
+<h3>Banding in a night sky or sunset gradient</h3>
+<p>Texture compression. Set Compression to None (or High Quality) on the sky images and reimport. If the banding is in the final frame rather than the texture, enable dithering in your post-processing or render at HDR.</p>
+
+<h2 id="packs">Ready-made skies for Unity and Godot 4</h2>
+<p>Every pack ships six-face cubemaps already named for Unity's slots (1024 px per face), a mirrored panorama set for <code>Skybox/Panoramic</code>, plain panoramas for Godot and other engines, and a Godot 4 addon. Royalty-free for commercial and non-commercial projects, no attribution required.</p>
+<img src="previews/space_skyboxes_sheet.jpg" width="1400" height="740" alt="Contact sheet of the 20 Space Skyboxes" loading="lazy">
+<table>
+  <tr><th>Pack</th><th>Skies</th><th>Price</th></tr>
+  <tr><td><a href="https://the-knightshift.itch.io/skybox-sampler">Skybox Sampler</a></td><td>6 (two from each paid pack), 512 px faces</td><td>Free</td></tr>
+  <tr><td><a href="https://the-knightshift.itch.io/space-skyboxes">Space Skyboxes</a></td><td>20 nebulae, planets, galaxy, eclipse, black hole</td><td>$3.99</td></tr>
+  <tr><td><a href="https://the-knightshift.itch.io/stylized-skyboxes">Stylized Sky Skyboxes</a></td><td>16 day, sunset, night and storm skies</td><td>$3.99</td></tr>
+  <tr><td><a href="https://the-knightshift.itch.io/alien-skyboxes">Alien Worlds Skyboxes</a></td><td>16 exoplanet skies</td><td>$3.99</td></tr>
+</table>
+<p><a class="cta" href="https://the-knightshift.itch.io/skybox-sampler">Get the free sampler</a> <a class="cta alt" href="https://the-knightshift.itch.io">All packs on itch.io</a></p>
+<p style="color:var(--muted);font-size:.9em">The skies are painted by procedural code written with AI assistance, then checked by eye and by numeric seam tests. No AI image generator is used; every store listing carries the same disclosure. Also see the <a href="godot-4-skybox-guide.html">Godot 4 skybox guide</a>.</p>
+
+</main>
+<footer>&copy; 2026 The_KnightShift &middot; <a href="index.html">Store</a> &middot; <a href="godot-4-skybox-guide.html">Godot 4 guide</a> &middot; <a href="debt-snowball-calculator.html">Debt Snowball Calculator</a></footer>
+</body>
+</html>
