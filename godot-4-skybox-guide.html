@@ -139,7 +139,7 @@ mat.panorama = load("res://skies/moonlit_night.png")</code></pre>
 
 <h2 id="procedural">No image? ProceduralSkyMaterial and PhysicalSkyMaterial</h2>
 <p>Both ship with Godot and need no texture. <strong>ProceduralSkyMaterial</strong> is a stylised gradient (top colour, horizon colour, ground, a sun disc per DirectionalLight3D) and is very cheap, which makes it a good placeholder and a good mobile sky. <strong>PhysicalSkyMaterial</strong> simulates Rayleigh and Mie scattering, so the colour follows the sun's height; it costs more per frame and has no clouds. Neither gives you a painted look, a nebula, or a second moon; that is where an image sky earns its place.</p>
-<p>Our own tool for this gap is <strong>SkyGen</strong>, a Godot 4 editor addon that paints a full panorama (gradient, sun, stars, clouds, planets) from sliders and saves it as a PNG plus a ready Environment. It is listed on itch alongside the packs below.</p>
+<p>Our own tool for this gap is <strong><a href="https://the-knightshift.itch.io/skygen">SkyGen</a></strong>, a Godot 4 editor addon that paints a full panorama (gradient, sun, stars, nebula, clouds) from sliders and saves it as a PNG plus a ready PanoramaSkyMaterial. The free <a href="https://the-knightshift.itch.io/skygen-lite">SkyGen LITE</a> has the gradient, sun and star layers up to 1024 px, so you can try the workflow first. Both are listed on itch alongside the packs below.</p>
 
 <h2 id="problems">Common problems and fixes</h2>
 <h3>The sky does not show up</h3>
